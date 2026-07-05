@@ -4,7 +4,6 @@ const router = express.Router();
 
 const protect = require("../middleware/auth");
 const upload = require("../middleware/upload");
-
 const {
   uploadVideo,
   getFeed,
@@ -12,7 +11,8 @@ const {
   addComment,
   deleteVideo,
   addView,
-} = require("../controllers/videoController");
+  saveVideo,
+} = require("../controllers/videoController"); 
 
 // Upload Video
 router.post("/upload", protect, upload.single("video"), uploadVideo);
@@ -30,6 +30,8 @@ router.post("/comment/:id", protect, addComment);
 router.delete("/delete/:id", protect, deleteVideo);
 
 router.put("/view/:id", addView);
+
+router.put("/save/:id", protect, saveVideo);
 
 module.exports = router;
 

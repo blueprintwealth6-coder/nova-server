@@ -231,7 +231,6 @@ const saveVideo = async (req, res) => {
 
 
 
-
 module.exports = {
   uploadVideo,
   getFeed,
@@ -239,5 +238,6 @@ module.exports = {
   addComment,
   deleteVideo,
   addView,
+  saveVideo,
 };
 
