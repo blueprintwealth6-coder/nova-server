@@ -1,7 +1,4 @@
-
 const Notification = require("../models/Notification");
-
-
 const cloudinary = require("../config/cloudinary");
 const Video = require("../models/Video");
 
@@ -20,9 +17,20 @@ const uploadVideo = async (req, res) => {
       folder: "nova-videos",
     });
 
+    const hashtags = req.body.hashtags
+      ? req.body.hashtags
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter((tag) => tag !== "")
+      : [];
+
     const video = await Video.create({
       user: req.user.id,
-      caption: req.body.caption,
+      title: req.body.title,
+      description: req.body.description,
+      hashtags,
+      category: req.body.category,
+      visibility: req.body.visibility || "public",
       videoUrl: result.secure_url,
     });
 
@@ -32,6 +40,8 @@ const uploadVideo = async (req, res) => {
       video,
     });
   } catch (err) {
+    console.log(err);
+
     res.status(500).json({
       success: false,
       message: err.message,
@@ -42,7 +52,9 @@ const uploadVideo = async (req, res) => {
 // ================= GET FEED =================
 const getFeed = async (req, res) => {
   try {
-    const videos = await Video.find()
+    const videos = await Video.find({
+      visibility: "public",
+    })
       .populate("user", "username profilePic")
       .sort({ createdAt: -1 });
 
@@ -74,16 +86,15 @@ const likeVideo = async (req, res) => {
     }
 
     await video.save();
-    
-if (video.user.toString() !== req.user.id) {
-  await Notification.create({
-    sender: req.user.id,
-    receiver: video.user,
-    type: "like",
-    video: video._id,
-  });
-}
 
+    if (video.user.toString() !== req.user.id) {
+      await Notification.create({
+        sender: req.user.id,
+        receiver: video.user,
+        type: "like",
+        video: video._id,
+      });
+    }
 
     res.json({
       success: true,
@@ -95,7 +106,6 @@ if (video.user.toString() !== req.user.id) {
     });
   }
 };
-
 // ================= ADD COMMENT =================
 const addComment = async (req, res) => {
   try {
@@ -113,17 +123,15 @@ const addComment = async (req, res) => {
     });
 
     await video.save();
-    
-if (video.user.toString() !== req.user.id) {
-  await Notification.create({
-    sender: req.user.id,
-    receiver: video.user,
-    type: "comment",
-    video: video._id,
-  });
-}
 
-
+    if (video.user.toString() !== req.user.id) {
+      await Notification.create({
+        sender: req.user.id,
+        receiver: video.user,
+        type: "comment",
+        video: video._id,
+      });
+    }
 
     const updatedVideo = await Video.findById(video._id)
       .populate("comments.user", "username profilePic");
@@ -132,6 +140,7 @@ if (video.user.toString() !== req.user.id) {
       success: true,
       comments: updatedVideo.comments,
     });
+
   } catch (err) {
     res.status(500).json({
       message: err.message,
@@ -162,6 +171,7 @@ const deleteVideo = async (req, res) => {
       success: true,
       message: "Video Deleted Successfully",
     });
+
   } catch (err) {
     res.status(500).json({
       message: err.message,
@@ -169,6 +179,7 @@ const deleteVideo = async (req, res) => {
   }
 };
 
+// ================= ADD VIEW =================
 const addView = async (req, res) => {
   try {
     const video = await Video.findById(req.params.id);
@@ -187,6 +198,7 @@ const addView = async (req, res) => {
       success: true,
       views: video.views,
     });
+
   } catch (err) {
     res.status(500).json({
       message: err.message,
@@ -194,6 +206,7 @@ const addView = async (req, res) => {
   }
 };
 
+// ================= SAVE VIDEO =================
 const saveVideo = async (req, res) => {
   try {
     const User = require("../models/User");
@@ -229,8 +242,36 @@ const saveVideo = async (req, res) => {
   }
 };
 
+// ================= GET MY VIDEOS =================
 
+const getMyVideos = async (req, res) => {
+  try {
 
+    const videos = await Video.find({
+      user: req.user.id,
+    })
+      .sort({ createdAt: -1 })
+      .populate("user", "username profilePic");
+
+    res.status(200).json({
+      success: true,
+      count: videos.length,
+      videos,
+    });
+
+  } catch (err) {
+
+    console.log(err);
+
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+
+  }
+};
+
+// ================= EXPORTS =================
 module.exports = {
   uploadVideo,
   getFeed,
@@ -239,5 +280,5 @@ module.exports = {
   deleteVideo,
   addView,
   saveVideo,
+  getMyVideos,
 };
-
