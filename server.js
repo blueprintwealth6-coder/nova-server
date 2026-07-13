@@ -16,8 +16,28 @@ const app = express();
 // Connect MongoDB
 connectDB();
 
-// Middlewares
-app.use(cors());
+// Middlewares - CORS configuration updated to fix the Vercel error
+const allowedOrigins = [
+  "https://vercel.app", // Aapki Vercel live website
+  "http://localhost:3000"                  // Local development / testing ke liye
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Agar request allowed origins se hai ya server-to-server (no origin) hai
+      if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error("Blocked by CORS policy"));
+      }
+    },
+    credentials: true, // Login tokens, authorization headers aur cookies allow karne ke liye
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+  })
+);
+
 app.use(express.json());
 
 // Main API Endpoints
